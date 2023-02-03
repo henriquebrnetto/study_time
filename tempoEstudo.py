@@ -20,8 +20,10 @@ def main(mode):
 
         #-----------------------------------------------------Code to Exit Program------------------------------------------------------
         #Intended Exception
-        #Program saves information on Excel file just by 
-        except KeyboardInterrupt:
+        #Program saves information on Excel file just by closing it
+        except KeyboardInterrupt as e:
+            error1 = type(e).__name__
+            print(error1)
             print('Ending application...')
             end = datetime.now()
 
@@ -34,9 +36,27 @@ def main(mode):
             if mode.upper() == 'P':
                 vals = [start.date().strftime('%d/%m/%Y'), start.time().isoformat(timespec='seconds'),
                 end.time().isoformat(timespec='seconds'), time.strftime(timet, '%H:%M:%S'), 'Prog']
-            if mode.upper() == 'E':
+            if mode.upper() == 'F':
                 vals = [start.date().strftime('%d/%m/%Y'), start.time().isoformat(timespec='seconds'),
-                end.time().isoformat(timespec='seconds'), time.strftime(timet, '%H:%M:%S'), 'Estudo']
+                end.time().isoformat(timespec='seconds'), time.strftime(timet, '%H:%M:%S'), 'Faculdade']
+            if mode.upper() == 'T':
+                vals = [start.date().strftime('%d/%m/%Y'), start.time().isoformat(timespec='seconds'),
+                end.time().isoformat(timespec='seconds'), time.strftime(timet, '%H:%M:%S'), 'Trabalho']
+
+            #Gets data from json file and compare data from Excel file with it
+            last_data = pd.read_excel('D:\\Python Projects\\Tempo de Estudo\\Horários de Estudo.xlsx').iloc[-1,:]
+            try:
+                with open('D:\\Python Projects\\Tempo de Estudo\\last_time.json', 'r') as json_file:
+                    last_val = pd.Series(json.load(json_file)).T
+
+                #Inserts data from json file in excel if the values are different
+                if last_data.equals(last_val) == False:
+                    with pd.ExcelWriter('D:\\Python Projects\\Tempo de Estudo\\Horários de Estudo.xlsx', engine='openpyxl', date_format='YYYY-MM-DD', mode='a', if_sheet_exists='overlay') as writer:
+                        last_val.to_excel(writer, 'Tempo de Estudo', header=False, index=False, startrow = writer.sheets['Tempo de Estudo'].max_row)
+                    print('Updating information in Excel file...')
+                    print('Data from previous runtime inserted! All set.')
+            except:
+                pass
 
             #Transforms data format and insert it into Excel file
             df = pd.DataFrame(vals).T
@@ -49,6 +69,13 @@ def main(mode):
 
         #--------------------------------------------Code to Solve any Issue with Excel Input ---------------------------------------------
         finally:
+            #Gets and logs error if application ends by itself
+            if error1 != 'KeyboardInterrupt':
+                print(f'Application failed. ERROR : {error1}')
+                logging.basicConfig(filename="D:\\Python Projects\\Tempo de Estudo\\errors.log", filemode='a', 
+                format='%(asctime)s, Function (%(funcName)s), Line %(lineno)d: %(message)s')
+                logging.exception(error1)
+            
             #Gets last data from Excel file and try to insert it again into the file
             last_data = pd.read_excel('D:\\Python Projects\\Tempo de Estudo\\Horários de Estudo.xlsx').iloc[-1,:]
             if df.squeeze().equals(last_data) == False:
@@ -58,22 +85,10 @@ def main(mode):
                     with pd.ExcelWriter('D:\\Python Projects\\Tempo de Estudo\\Horários de Estudo.xlsx', engine='openpyxl', date_format='YYYY-MM-DD', mode='a', if_sheet_exists='overlay') as writer:
                         df.to_excel(writer, 'Estudo', header=False, index=False, startrow = writer.sheets['Estudo'].max_row)
                     print('All set! See you next time :)')
+                #Log errors to errors file
                 except Exception as e:
                     logging.exception(e)
                     pass
-
-            #Gets data from json file
-            try:
-                with open('D:\\Python Projects\\Tempo de Estudo\\last_time.json', 'r') as json_file:
-                    last_val = pd.Series(json.load(json_file)).T
-
-                #Inserts data from json file in excel if the values are different
-                if last_data.equals(last_val) == False:
-                    with pd.ExcelWriter('D:\\Python Projects\\Tempo de Estudo\\Horários de Estudo.xlsx', engine='openpyxl', date_format='YYYY-MM-DD', mode='a', if_sheet_exists='overlay') as writer:
-                        last_val.to_excel(writer, 'Tempo de Estudo', header=False, index=False, startrow = writer.sheets['Tempo de Estudo'].max_row)
-                    print('Data from previous runtime inserted! All set.')
-            except:
-                pass
 
             #Writes new data into json file (in case of an error in the code above, the data will still be saved)
             dict_keys = ['Dia', 'Início', 'Final', 'Delta (hh:min:seg)', 'Tipo']
@@ -87,7 +102,7 @@ def main(mode):
 
 
 if __name__ == '__main__':
-    my_dict = {'P' : 'Programação', 'E' : 'Estudo'}
-    mode = (input(f'{my_dict["P"]} (P) ou {my_dict["E"]} (E)? ')).upper()
+    my_dict = {'P' : 'Programação', 'F' : 'Faculdade', 'T' : 'Trabalho'}
+    mode = (input(f'{my_dict["P"]} (P), {my_dict["F"]} (F) ou {my_dict["T"]} (T)? ')).upper()
     print(f'Modo escolhido: {my_dict[mode]}\n-----------------------------------------------------------------------------------------------------------------------')
     main(mode)
