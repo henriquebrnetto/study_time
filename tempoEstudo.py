@@ -7,8 +7,13 @@ def main(mode):
     #Get starting time
     start = datetime.now()
 
+    #Create path variables
+    path_excel = 'D:\\Python Projects\\Tempo de Estudo\\Horários de Estudo.xlsx'
+    path = "D:\\Python Projects\\Tempo de Estudo\\errors.log"
+    
     #Log basic configuration
-    logging.basicConfig(filename="D:\\Python Projects\\Tempo de Estudo\\errors.log", filemode='a', 
+    
+    logging.basicConfig(filename=path, filemode='a', 
     format='%(asctime)s,Function (%(funcName)s), Line %(lineno)d: %(message)s')
 
     #-------------------------------------------------------------Main Loop-------------------------------------------------------------
@@ -44,14 +49,14 @@ def main(mode):
                 end.time().isoformat(timespec='seconds'), time.strftime(timet, '%H:%M:%S'), 'Trabalho']
 
             #Gets data from json file and compare data from Excel file with it
-            last_data = pd.read_excel('D:\\Python Projects\\Tempo de Estudo\\Horários de Estudo.xlsx').iloc[-1,:]
+            last_data = pd.read_excel(path_excel).iloc[-1,:]
             try:
-                with open('D:\\Python Projects\\Tempo de Estudo\\last_time.json', 'r') as json_file:
+                with open(path_excel, 'r') as json_file:
                     last_val = pd.Series(json.load(json_file)).T
 
                 #Inserts data from json file in excel if the values are different
                 if last_data.equals(last_val) == False:
-                    with pd.ExcelWriter('D:\\Python Projects\\Tempo de Estudo\\Horários de Estudo.xlsx', engine='openpyxl', date_format='YYYY-MM-DD', mode='a', if_sheet_exists='overlay') as writer:
+                    with pd.ExcelWriter(path_excel, engine='openpyxl', date_format='YYYY-MM-DD', mode='a', if_sheet_exists='overlay') as writer:
                         last_val.to_excel(writer, 'Tempo de Estudo', header=False, index=False, startrow = writer.sheets['Tempo de Estudo'].max_row)
                     print('Updating information in Excel file...')
                     print('Data from previous runtime inserted! All set.')
@@ -62,7 +67,7 @@ def main(mode):
             df = pd.DataFrame(vals).T
             df.columns = ['Dia', 'Início', 'Final', 'Delta (hh:min:seg)', 'Tipo']
             print('First try.....')
-            with pd.ExcelWriter('D:\\Python Projects\\Tempo de Estudo\\Horários de Estudo.xlsx', engine='openpyxl', date_format='YYYY-MM-DD',
+            with pd.ExcelWriter(path_excel, engine='openpyxl', date_format='YYYY-MM-DD',
             mode='a', if_sheet_exists='overlay') as writer:
                 df.to_excel(writer, 'Estudo', header=False, index=False, startrow = writer.sheets['Estudo'].max_row)
             print('All set! See you next time :)')
@@ -72,17 +77,17 @@ def main(mode):
             #Gets and logs error if application ends by itself
             if error1 != 'KeyboardInterrupt':
                 print(f'Application failed. ERROR : {error1}')
-                logging.basicConfig(filename="D:\\Python Projects\\Tempo de Estudo\\errors.log", filemode='a', 
+                logging.basicConfig(filename=path, filemode='a', 
                 format='%(asctime)s, Function (%(funcName)s), Line %(lineno)d: %(message)s')
                 logging.exception(error1)
             
             #Gets last data from Excel file and try to insert it again into the file
-            last_data = pd.read_excel('D:\\Python Projects\\Tempo de Estudo\\Horários de Estudo.xlsx').iloc[-1,:]
+            last_data = pd.read_excel(path_excel).iloc[-1,:]
             if df.squeeze().equals(last_data) == False:
                 print('An error occured.')
                 try:
                     print('Second try.....')
-                    with pd.ExcelWriter('D:\\Python Projects\\Tempo de Estudo\\Horários de Estudo.xlsx', engine='openpyxl', date_format='YYYY-MM-DD', mode='a', if_sheet_exists='overlay') as writer:
+                    with pd.ExcelWriter(path_excel, engine='openpyxl', date_format='YYYY-MM-DD', mode='a', if_sheet_exists='overlay') as writer:
                         df.to_excel(writer, 'Estudo', header=False, index=False, startrow = writer.sheets['Estudo'].max_row)
                     print('All set! See you next time :)')
                 #Log errors to errors file
